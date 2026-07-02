@@ -127,6 +127,44 @@ based only on the WAV's duration. This keeps the rest of the pipeline
 see `tests/`, which synthesize sine-wave WAV files rather than depending on
 committed audio fixtures.
 
+**Why an abstract `TranscriptionBackend` interface?**
+`pipeline.py` only ever calls `backend.transcribe(wav_path, language)` and
+gets back `RawSegment`s - it has no `if backend == "whisper"` branches
+anywhere. That's what lets `MockBackend` stand in for `FasterWhisperBackend`
+in every test and in the web UI's "instant demo" mode without touching
+pipeline/chunking/postprocessing code, and lets a future backend (e.g. a
+cloud STT API) be added by implementing one method, not by threading a new
+conditional through the whole pipeline.
+
+**Why faster-whisper over openai-whisper?**
+`faster-whisper` (CTranslate2) gives the same Whisper model weights with
+significantly lower CPU latency/memory via int8 quantization
+(`compute_type="int8"` by default here), which matters since this pipeline
+targets CPU-only environments rather than assuming a GPU. It also exposes
+built-in VAD filtering (`vad_filter=True`), which cheaply skips
+silence/non-speech instead of wasting decode time on it. The model itself
+is loaded lazily on first `transcribe()` call and cached on the backend
+instance, so constructing a `FasterWhisperBackend` (e.g. at CLI startup) is
+free; the multi-hundred-MB download/load cost is only paid if it's actually
+used.
+
+**Web layer as a thin wrapper, not a second implementation.**
+`web/app.py` contains no transcription logic - it builds the same
+`TranscriptionPipeline`/`TranscriptionBackend` objects the CLI uses and
+calls `pipeline.run()`. This keeps the CLI and web UI guaranteed to behave
+identically (one code path, two entrypoints) instead of drifting apart.
+Three narrower decisions inside that wrapper:
+- `FasterWhisperBackend` instances are cached per `(model_size, device)` in
+  `_whisper_backend_cache`, so concurrent/repeated requests in one server
+  process reuse an already-loaded model instead of reloading it per upload.
+- The `/api/transcribe` handler is a plain `def`, not `async def`, so
+  FastAPI runs the blocking transcription work in a worker thread rather
+  than on the event loop - the server stays responsive to other requests
+  (e.g. static file serving) while a transcription is in progress.
+- Each upload gets its own `uuid`-named job directory under `web/uploads/`,
+  so concurrent uploads with the same filename can't collide, and a failed
+  job's directory is removed instead of left behind.
+
 ## Trade-offs / things a production version would add
 
 - Normalization currently decodes the whole file to WAV up front (simple,
