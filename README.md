@@ -42,6 +42,18 @@ and the page shows the full transcript, a clickable per-segment list that
 seeks the audio player, extracted keywords, and download links for the
 generated JSON/SRT/TXT files.
 
+![Voice Transcription Pipeline web UI](docs/web_ui.png)
+
+What you can do from this page:
+- **Upload an audio file** - via the file picker or drag-and-drop (WAV, MP3, M4A, or anything ffmpeg can decode).
+- **Choose the transcription backend** - `mock` for an instant, offline, deterministic run (no model download, good for demos/testing), or `whisper` for real speech-to-text.
+- **Pick a Whisper model size** (`tiny`/`base`/`small`/`medium`) to trade off speed vs. accuracy, and optionally force a language code instead of relying on auto-detection.
+- **Play back the uploaded audio** in-browser via the built-in `<audio>` player.
+- **Browse timestamped segments** - each segment shows its start/end time and text; clicking one seeks the player to that point, and the active segment highlights automatically as playback progresses.
+- **Read the full transcript** as a single cleaned block of text.
+- **See extracted keywords** - a stopword-filtered word-frequency summary of the transcript, useful as an example of downstream tagging/search facets.
+- **Download the result** as `.json` (structured segments + metadata), `.srt` (subtitles), or `.txt` (plain transcript) for use in other tools.
+
 - [`web/app.py`](web/app.py) - the single `POST /api/transcribe` endpoint (accepts a file upload, runs the pipeline, returns the transcript JSON + file URLs) and static file serving. Whisper model instances are cached per `(model_size, device)` across requests so the model is only loaded once per server process.
 - [`web/static/`](web/static) - plain HTML/CSS/JS frontend (no build step).
 
