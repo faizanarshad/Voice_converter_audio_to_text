@@ -6,3 +6,4 @@ output/
 web/uploads/
 .claude/
 *.DS_Store
+docs/~$*
