@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Transcription Pipeline</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Voice Transcription Pipeline</h1>
+      <p class="subtitle">Upload an audio file to transcribe it into timestamped text.</p>
+    </header>
+
+    <form id="upload-form">
+      <label class="file-drop" id="file-drop">
+        <input type="file" id="file-input" accept="audio/*" required />
+        <span id="file-label">Choose an audio file (WAV, MP3, M4A, ...) or drag it here</span>
+      </label>
+
+      <div class="controls">
+        <label>
+          Backend
+          <select id="backend-select">
+            <option value="mock">Mock (instant, offline)</option>
+            <option value="whisper" selected>Whisper (real transcription)</option>
+          </select>
+        </label>
+
+        <label id="model-size-label">
+          Model size
+          <select id="model-size-select">
+            <option value="tiny">tiny (fastest)</option>
+            <option value="base" selected>base</option>
+            <option value="small">small</option>
+            <option value="medium">medium (slower, more accurate)</option>
+          </select>
+        </label>
+
+        <label>
+          Language (optional)
+          <input type="text" id="language-input" placeholder="auto-detect" maxlength="8" />
+        </label>
+      </div>
+
+      <button type="submit" id="submit-btn">Transcribe</button>
+    </form>
+
+    <p id="status" class="status" hidden></p>
+
+    <section id="results" hidden>
+      <audio id="audio-player" controls></audio>
+
+      <div class="downloads">
+        <a id="download-json" href="#" download>Download JSON</a>
+        <a id="download-srt" href="#" download>Download SRT</a>
+        <a id="download-txt" href="#" download>Download TXT</a>
+      </div>
+
+      <h2>Full transcript</h2>
+      <p id="full-text"></p>
+
+      <h2>Segments <span id="segment-meta" class="segment-meta"></span></h2>
+      <ol id="segments"></ol>
+
+      <h2>Keywords</h2>
+      <div id="keywords" class="keywords"></div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
